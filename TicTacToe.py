@@ -1,14 +1,16 @@
-# Create the board
-board = [None] * 9
 
-# Symbols for the players
-players = ['X','O']
+board = [None] * 9          # Create an empty board
+PLAYERS = ['X','O']         # Symbols for the players
+who = 0                     # Starting player (PLAYERS[who])
+over = False                # Indicate if the game is over
+outcome = "It's a draw"     # Game is a draw until proven otherwise
 
-# Starting player
-who = 0
-
-# Indicate if the game is over
-over = False
+# Winning combinations
+COMBOS = [
+    [0,1,2],[3,4,5],[6,7,8],    #rows
+    [0,3,6],[1,4,7],[2,5,8],    #cols
+    [0,4,8],[6,4,2]             #diagonals
+]
 
 # Just to make it pretty on the screen
 def display(board):
@@ -25,44 +27,37 @@ def display(board):
     print("| ",b[6]," | ",b[7]," | ",b[8]," |")
     print("+-----+-----+-----+")
 
-# Display the how-to
+# Displays the HOW-TO
 rule_board = [1,2,3,4,5,6,7,8,9]
 display(rule_board)
 print("When it's your turn, type in the number of the cell you want to play then press [Enter].")
 
+# MAIN GAME LOOP
 while not over:
     display(board)
+    print()
 
     # Prompt the player to play
-    cell = int(input("Player " + players[who] +", enter where you want to play:"))
+    cell = int(input("Player " + PLAYERS[who] +", enter where you want to play:"))
 
     # -1 to match the cell index
-    board[cell - 1] =  players[who]
+    board[cell - 1] =  PLAYERS[who]
 
-    # Check if over
-
-    # Is the board full?
+    # Is the board full? (no more empty cell)
     if len(list(filter(lambda x: x is  None, board))) == 0:
         over = True
 
-    # Is there a winner?
-    p = players[who]
-    if  (
-        all([board[0] == p, board[1] == p, board[2] == p]) or   #row 1
-        all([board[3] == p, board[4] == p, board[5] == p]) or   #row 2
-        all([board[6] == p, board[7] == p, board[8] == p]) or   #row 3
-        all([board[0] == p, board[3] == p, board[6] == p]) or   #col 1
-        all([board[1] == p, board[4] == p, board[7] == p]) or   #col 2
-        all([board[2] == p, board[5] == p, board[8] == p]) or   #col 3
-        all([board[0] == p, board[4] == p, board[8] == p]) or   #diag 1
-        all([board[6] == p, board[4] == p, board[2] == p])      #diad 2
-    ):
-        # A player has a wiining line, game is over
-        over = True
+    # Has the player ticked all cells of any winning combination?
+    for combo in COMBOS:
+        if all(list(map(lambda cell: board[cell] == PLAYERS[who], combo))):
+            outcome = PLAYERS[who] + " wins!"
+            over = True
 
     # Move to the next player
-    who = (who + 1) % len(players)
+    who = (who + 1) % len(PLAYERS)
 
-# Game is over, display final board
+# Game is over, display the outcome and final board
 display(board)
+print()
+print(outcome)
 
