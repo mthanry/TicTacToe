@@ -1,3 +1,4 @@
+from os import system, name 
 
 board = [None] * 9          # Create an empty board
 players = ['X','O']         # Symbols for the players
@@ -12,8 +13,22 @@ COMBOS = [
     [0,4,8],[6,4,2]             #diagonals
 ]
 
-# Just to make it pretty on the screen
+def clear(): 
+    """
+    https://www.geeksforgeeks.org/clear-screen-python/
+    """
+
+    # for windows 
+    if name == 'nt': 
+        _ = system('cls') 
+    # for mac and linux(here, os.name is 'posix') 
+    else: 
+        _ = system('clear') 
+
 def display(board):
+    """
+    Prettify the TicTacToe board for display in terminal
+    """
     b = list(board)
     for i,v in enumerate(b):
         if v == None:
@@ -26,6 +41,16 @@ def display(board):
     print("+-----+-----+-----+")
     print("| ",b[6]," | ",b[7]," | ",b[8]," |")
     print("+-----+-----+-----+")
+
+def freecells(board):
+    """
+    Returns the list of valid inputs to present to the user (free cells)
+    """
+    cells = []
+    for i,v in enumerate(board):
+        if v == None:
+            cells.append(i+1)
+    return cells
 
 # Displays the HOW-TO
 rule_board = [1,2,3,4,5,6,7,8,9]
@@ -41,19 +66,13 @@ while not over:
     valid = False
     while not valid:
         #Fool proof input
-        try:
-            cell = int(input("Player " + players[who] +", enter where you want to play:"))
-            
-            if cell-1 not in range(0,len(board)):
-                print("That number must be between 1 and ",len(board),".")
-                continue
-        except:
-            print("Make sure to enter a number.")
-        else:
-            if board[cell-1] is None:
+        print("Valid choices are ", freecells(board))
+        cell = input("Player " + players[who] +", enter where you want to play:")
+        if cell.isdigit():
+            if int(cell) in freecells(board):
+                cell = int(cell)
                 valid = True
-            else:
-                print("That spot is already taken!")
+
 
     # Play in that cell (-1 to match the cell index)
     board[cell - 1] =  players[who]
@@ -70,6 +89,7 @@ while not over:
 
     # Move to the next player
     who = (who + 1) % len(players)
+    clear()
 
 # Game is over, display the outcome and final board
 display(board)
