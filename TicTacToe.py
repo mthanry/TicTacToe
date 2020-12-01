@@ -1,7 +1,7 @@
 
 board = [None] * 9          # Create an empty board
-PLAYERS = ['X','O']         # Symbols for the players
-who = 0                     # Starting player (PLAYERS[who])
+players = ['X','O']         # Symbols for the players
+who = 0                     # Starting player (players[who])
 over = False                # Indicate if the game is over
 outcome = "It's a draw"     # Game is a draw until proven otherwise
 
@@ -38,10 +38,25 @@ while not over:
     print()
 
     # Prompt the player to play
-    cell = int(input("Player " + PLAYERS[who] +", enter where you want to play:"))
+    valid = False
+    while not valid:
+        #Fool proof input
+        try:
+            cell = int(input("Player " + players[who] +", enter where you want to play:"))
+            
+            if cell-1 not in range(0,len(board)):
+                print("That number must be between 1 and ",len(board),".")
+                continue
+        except:
+            print("Make sure to enter a number.")
+        else:
+            if board[cell-1] is None:
+                valid = True
+            else:
+                print("That spot is already taken!")
 
-    # -1 to match the cell index
-    board[cell - 1] =  PLAYERS[who]
+    # Play in that cell (-1 to match the cell index)
+    board[cell - 1] =  players[who]
 
     # Is the board full? (no more empty cell)
     if len(list(filter(lambda x: x is  None, board))) == 0:
@@ -49,12 +64,12 @@ while not over:
 
     # Has the player ticked all cells of any winning combination?
     for combo in COMBOS:
-        if all(list(map(lambda cell: board[cell] == PLAYERS[who], combo))):
-            outcome = PLAYERS[who] + " wins!"
+        if all(list(map(lambda cell: board[cell] == players[who], combo))):
+            outcome = players[who] + " wins!"
             over = True
 
     # Move to the next player
-    who = (who + 1) % len(PLAYERS)
+    who = (who + 1) % len(players)
 
 # Game is over, display the outcome and final board
 display(board)
