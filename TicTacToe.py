@@ -14,10 +14,8 @@ COMBOS = [
 ]
 
 def clear(): 
-    """
-    https://www.geeksforgeeks.org/clear-screen-python/
-    """
-
+    """Clear the terminal"""
+    #https://www.geeksforgeeks.org/clear-screen-python/
     # for windows 
     if name == 'nt': 
         _ = system('cls') 
@@ -52,27 +50,75 @@ def freecells(board):
             cells.append(i+1)
     return cells
 
+def getcellfromplayer(board, player):
+    """
+    Asks the user to make a move
+        Parameters:
+            board (list):   A list of cells that represents 
+                            the TicTacToe board
+            player (str):   The player's mark 
+
+        Returns:
+            cell (integer): A valid cell number where the 
+                            player can put his mark
+    """
+    valid = False
+    while not valid:
+        #Valid input consists of free cells only
+        print("Valid choices are", freecells(board))
+        cell = input("Player " + players[who] +", enter where you want to play:")
+        if cell.isdigit():
+            if int(cell) in freecells(board):
+                cell = int(cell)
+                valid = True
+    return cell
+
+clear()
 # Displays the HOW-TO
 rule_board = [1,2,3,4,5,6,7,8,9]
 display(rule_board)
 print("When it's your turn, type in the number of the cell you want to play then press [Enter].")
+print()
 
 # MAIN GAME LOOP
 while not over:
     display(board)
     print()
 
-    # Prompt the player to play
-    valid = False
-    while not valid:
-        #Fool proof input
-        print("Valid choices are ", freecells(board))
-        cell = input("Player " + players[who] +", enter where you want to play:")
-        if cell.isdigit():
-            if int(cell) in freecells(board):
-                cell = int(cell)
-                valid = True
 
+
+    for c in freecells(board):   
+        me = 0
+        him = 0
+        score = 0
+
+        for combo in COMBOS:
+            if c-1 not in combo:
+                #ignore combo that do not include cell
+                continue
+            else:
+                me = len(list(filter(lambda x: board[x] == players[who], combo)))
+                him = len(list(filter(lambda x: board[x] == players[(who + 1) % len(players)], combo)))
+
+            if me == 2:
+                score += 1024
+            elif him == 2:
+                score += 512
+            elif me == 1:
+                score += 256
+            elif him == 1:
+                score += 128
+            else:
+                score += 64
+
+        print(f"Cell{c}: Pref={score}")
+
+
+
+
+
+    # Prompt the player to play
+    cell = getcellfromplayer(board, players[who])
 
     # Play in that cell (-1 to match the cell index)
     board[cell - 1] =  players[who]
