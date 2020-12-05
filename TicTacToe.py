@@ -1,11 +1,5 @@
 from os import system, name 
 
-board = [None] * 9          # Create an empty board
-players = ['X','O']         # Symbols for the players
-who = 0                     # Starting player (players[who])
-over = False                # Indicate if the game is over
-outcome = "It's a draw"     # Game is a draw until proven otherwise
-
 # Winning combinations
 COMBOS = [
     [0,1,2],[3,4,5],[6,7,8],    #rows
@@ -24,7 +18,7 @@ class Player :
         self.score =+ 1
 
 player = [None] * 2
-player[0] = Player("Michael","X")
+player[0] = Player("Michael","X", False)
 player[1] = Player("WOPR","O", True) # Easter egg https://www.youtube.com/watch?v=fFJVspLBYCI
 
 def clear(): 
@@ -61,7 +55,7 @@ def freecells(board):
     cells = []
     for i,v in enumerate(board):
         if v == None:
-            cells.append(i+1)
+            cells.append(i)
     return cells
 
 def getcellfromplayer(board, player):
@@ -79,13 +73,13 @@ def getcellfromplayer(board, player):
     valid = False
     while not valid:
         #Valid input consists of free cells only
-        print("Valid choices are", freecells(board))
+        print("Valid choices are", list(map(lambda x : x+1, freecells(board))))
         cell = input(player.name +", select where you want to play:")
         if cell.isdigit():
-            if int(cell) in freecells(board):
+            if int(cell)-1 in freecells(board):
                 cell = int(cell)
                 valid = True
-    return cell
+    return cell-1
 
 def getcellfromAI(board, player,opponent):
     """
@@ -102,37 +96,108 @@ def getcellfromAI(board, player,opponent):
     """
     
     # HillClimb algorithm
-    preferred_cell = None
-    best_score_so_far = 0
+    
+    scores = []
+    strat_1 = []
+    strat_2 = []
+    strat_3 = []
+    strat_41 = []
+    strat_42 = []
+    strat_5 = []
+    strat_6 = []
+    strat_7 = []
+    strat_8 = []
+
+    # Evaluate each possible next move against the optimal strategy
     for c in freecells(board):   
         me = 0
         him = 0
-        score = 0
-        best_so_far = 0
-        for combo in COMBOS:
-            if c-1 in combo:
-                #ignore combos that do not include said cell
+        combo_stats = []
 
-                # Heuristics calculation below
+        # For line, row, diag that contains the evaluated move
+        for combo in COMBOS:
+            if c in combo:
                 me = len(list(filter(lambda x: board[x] == player.mark, combo)))
                 him = len(list(filter(lambda x: board[x] == opponent.mark, combo)))
-                if me == 2:
-                    score += 1024
-                elif him == 2:
-                    score += 512
-                elif me == 1:
-                    score += 256
-                elif him == 1:
-                    score += 128
-                else:
-                    score += 64
+                combo_stats.append((me,him))
 
-        # Flag the cell as preferred if it gets the player closer to victory
-        if score > best_score_so_far:
-            best_score_so_far = score
-            preferred_cell = c
+        
+        # Heuristics calculation below are based on the best strategy
+        # See https://en.wikipedia.org/wiki/Tic-tac-toe#Strategy
 
-    return preferred_cell
+        # 1. WIN
+        # If combo consists of 2 of the player's mark then fill the space
+        if (2,0) in combo_stats: 
+            strat_1.append(c)
+            continue
+
+        # 2. BLOCK
+        # If combo consists of 2 of the opponent's mark then fill the space
+        if (0,2) in combo_stats: 
+            strat_2.append(c)
+            continue         
+
+        # 3. FORK
+        # Create a double opportunity
+        if combo_stats.count((1,0)) == 2: 
+            strat_3.append(c)
+            continue
+
+        # 4. BLOCK FORK
+        # Prevent a double opportunity
+        if combo_stats.count((0,1)) == 2: 
+            strat_42.append(c)
+            if len(strat_42) >1:
+                # find a valid move in a combo with (me/him) = (1,0) 
+                # that contains none of the values of strat_42[]
+                for combo in COMBOS:
+                    if (    strat_42[0] not in combo and 
+                            strat_42[1] not in combo and
+                            len(list(filter(lambda x: board[x] == player.mark, combo))) == 1 and
+                            len(list(filter(lambda x: board[x] == opponent.mark, combo))) == 0):
+                        strat_41.extend(list(filter(lambda x: board[x] == None, combo)))
+                
+            continue
+
+        # 5. CENTRE
+        if board[4] == None: 
+            strat_5.append(4)
+            continue
+
+        # 6. OPPOSITE CORNER
+        if  ((c == 0 and board[9] == opponent.mark) or 
+            (c == 9 and board[0] == opponent.mark) or 
+            (c == 3 and board[7] == opponent.mark) or 
+            (c == 7 and board[3] == opponent.mark)): 
+            strat_6.append(c)
+            continue
+        
+        # 7. EMPTY CORNER
+        if c in (0, 3, 7, 9): 
+            strat_7.append(c)
+            continue
+            
+        # 8. EMPTY EDGE
+        if c in (1, 4, 6, 8): 
+            strat_8.append(c)
+            continue
+
+    scores.extend(strat_1)
+    scores.extend(strat_2)
+    scores.extend(strat_3)
+    scores.extend(strat_41)
+    scores.extend(strat_42)
+    scores.extend(strat_5)
+    scores.extend(strat_6)
+    scores.extend(strat_7)
+    scores.extend(strat_8)
+
+    print(player.name, "played in ",scores[0]+1)
+    return scores[0]
+            
+
+
+
 
 # Displays the HOW-TO
 clear()
@@ -142,22 +207,29 @@ print("When it's your turn, type in the number of the cell you want to play then
 input("Press [Enter] to start.")
 clear()
 
-# MAIN GAME LOOP
+
+# Prematch setup
+board = [None] * 9  # Create an empty board
+over = False        # Is the game over?
+who = 0             # Which player starts?
+outcome = "Draw"
+
+# MATCH LOOP
 while not over:
     display(board)
     print()
 
     # Prompt the player to play
     if player[who].ai:
-        cell = getcellfromAI(board, player[who], player[(who + 1) % len(players)])
+        cell = getcellfromAI(board, player[who], player[(who + 1) % len(player)])
     else:
         cell = getcellfromplayer(board, player[who])
 
-    # Play in that cell (-1 to match the cell index)
-    board[cell - 1] =  player[who].mark
+    # Play in that cell
+    board[cell] =  player[who].mark
 
     # Is the board full? (no more empty cell)
-    if len(list(filter(lambda x: x is  None, board))) == 0:
+    if board.count(None) == 0:
         over = True
 
     # Has the player ticked all cells of any winning combination?
@@ -168,10 +240,10 @@ while not over:
             over = True
 
     # Move to the next player and clear the screen
-    who = (who + 1) % len(players)
-    clear()
+    who = (who + 1) % len(player)
+    #clear()
 
-# Game is over, display the outcome and final board
+# Match is over, display the outcome and final board
 display(board)
 print(outcome)
 print(f"{player[0].name}:{player[0].score}")
